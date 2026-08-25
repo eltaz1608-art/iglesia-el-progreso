@@ -10,10 +10,7 @@ type Visita = {
   telefono: string;
   fecha_visita: string;
   contactado: boolean;
-  perfiles?: {
-    nombre: string;
-    apellido: string;
-  }[];
+  perfiles?: any; // Cambiado a 'any' para evitar problemas de tipos en Vercel
 };
 
 type Miembro = {
@@ -268,15 +265,23 @@ export default function VisitasPage() {
               </thead>
               <tbody className="divide-y text-sm">
                 {visitasFiltradas.map((v) => {
-                  const nombrePerfil = v.perfiles && v.perfiles.length > 0 
-                    ? `${v.perfiles[0].nombre} ${v.perfiles[0].apellido}` 
-                    : "Ninguno";
+                  
+                  // Lógica mejorada para extraer el nombre del invitador
+                  let nombrePerfil = "Ninguno";
+                  if (v.perfiles) {
+                    if (Array.isArray(v.perfiles) && v.perfiles.length > 0) {
+                      nombrePerfil = `${v.perfiles[0].nombre} ${v.perfiles[0].apellido}`;
+                    } else if (!Array.isArray(v.perfiles) && v.perfiles.nombre) {
+                      nombrePerfil = `${v.perfiles.nombre} ${v.perfiles.apellido}`;
+                    }
+                  }
 
                   return (
                     <tr key={v.id} className="hover:bg-gray-50">
                       <td className="py-3 px-3 font-medium text-gray-800">{v.nombre}</td>
                       <td className="py-3 px-3 text-gray-600">{v.telefono || "S/N"}</td>
-                      <td className="py-3 px-3 text-gray-600">{nombrePerfil}</td>
+                      {/* Aplicamos el color azul al invitador para que resalte */}
+                      <td className="py-3 px-3 text-blue-700 font-medium">{nombrePerfil}</td>
                       <td className="py-3 px-3 text-gray-500 text-xs">{v.fecha_visita}</td>
                       <td className="py-3 px-3 text-center">
                         <button
