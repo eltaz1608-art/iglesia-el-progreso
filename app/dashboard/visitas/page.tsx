@@ -13,7 +13,7 @@ type Visita = {
   perfiles?: {
     nombre: string;
     apellido: string;
-  };
+  }[];
 };
 
 type Miembro = {
@@ -82,7 +82,7 @@ export default function VisitasPage() {
       `)
       .order("fecha_visita", { ascending: false });
 
-    if (resVisitas) setVisitas(resVisitas);
+    if (resVisitas) setVisitas(resVisitas as unknown as Visita[]);
     setCargando(false);
   };
 
@@ -267,40 +267,44 @@ export default function VisitasPage() {
                 </tr>
               </thead>
               <tbody className="divide-y text-sm">
-                {visitasFiltradas.map((v) => (
-                  <tr key={v.id} className="hover:bg-gray-50">
-                    <td className="py-3 px-3 font-medium text-gray-800">{v.nombre}</td>
-                    <td className="py-3 px-3 text-gray-600">{v.telefono || "S/N"}</td>
-                    <td className="py-3 px-3 text-gray-600">
-                      {v.perfiles ? `${v.perfiles.nombre} ${v.perfiles.apellido}` : "Ninguno"}
-                    </td>
-                    <td className="py-3 px-3 text-gray-500 text-xs">{v.fecha_visita}</td>
-                    <td className="py-3 px-3 text-center">
-                      <button
-                        onClick={() => toggleContactado(v.id, v.contactado)}
-                        disabled={!puedeEditar}
-                        className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
-                          v.contactado 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-orange-100 text-orange-700'
-                        } ${puedeEditar ? (v.contactado ? 'hover:bg-green-200 cursor-pointer' : 'hover:bg-orange-200 cursor-pointer') : 'cursor-default opacity-80'}`}
-                      >
-                        {v.contactado ? '✓ Contactado' : 'Pendiente'}
-                      </button>
-                    </td>
-                    {puedeEditar && (
+                {visitasFiltradas.map((v) => {
+                  const nombrePerfil = v.perfiles && v.perfiles.length > 0 
+                    ? `${v.perfiles[0].nombre} ${v.perfiles[0].apellido}` 
+                    : "Ninguno";
+
+                  return (
+                    <tr key={v.id} className="hover:bg-gray-50">
+                      <td className="py-3 px-3 font-medium text-gray-800">{v.nombre}</td>
+                      <td className="py-3 px-3 text-gray-600">{v.telefono || "S/N"}</td>
+                      <td className="py-3 px-3 text-gray-600">{nombrePerfil}</td>
+                      <td className="py-3 px-3 text-gray-500 text-xs">{v.fecha_visita}</td>
                       <td className="py-3 px-3 text-center">
                         <button
-                          onClick={() => eliminarVisita(v.id, v.nombre)}
-                          className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-1 bg-red-50 rounded transition-colors"
-                          title="Eliminar invitado"
+                          onClick={() => toggleContactado(v.id, v.contactado)}
+                          disabled={!puedeEditar}
+                          className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
+                            v.contactado 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-orange-100 text-orange-700'
+                          } ${puedeEditar ? (v.contactado ? 'hover:bg-green-200 cursor-pointer' : 'hover:bg-orange-200 cursor-pointer') : 'cursor-default opacity-80'}`}
                         >
-                          Eliminar
+                          {v.contactado ? '✓ Contactado' : 'Pendiente'}
                         </button>
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      {puedeEditar && (
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            onClick={() => eliminarVisita(v.id, v.nombre)}
+                            className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-1 bg-red-50 rounded transition-colors"
+                            title="Eliminar invitado"
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
                 {visitasFiltradas.length === 0 && (
                   <tr>
                     <td colSpan={puedeEditar ? 6 : 5} className="py-6 text-center text-gray-400 text-sm italic">
