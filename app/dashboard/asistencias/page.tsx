@@ -104,7 +104,7 @@ export default function AsistenciasPage() {
     const { error } = await supabase.from("perfiles").insert({
       nombre: nuevoNombre,
       apellido: nuevoApellido,
-      rol: "general", // Se asigna general por defecto a los miembros del directorio
+      rol: "general",
     });
 
     if (error) {
@@ -166,191 +166,275 @@ export default function AsistenciasPage() {
     }
   };
 
-  if (cargando) return <div className="p-8">Cargando módulo de asistencias...</div>;
+  if (cargando) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <p className="text-gray-500 font-medium">Cargando módulo...</p>
+        </div>
+      </div>
+    );
+  }
 
   const historialFiltrado = historial.filter((h) => h.fecha === fechaConsulta);
   const puedeEditar = ['pastor', 'lider_asistencia'].includes(userRol);
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-8">
-      <div className="flex items-center gap-4 mb-8">
-        <button 
-          onClick={() => router.push("/dashboard")}
-          className="text-gray-500 hover:text-blue-600 font-medium"
-        >
-          ← Volver al Panel
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900">
-          {puedeEditar ? 'Registro de Asistencia y Miembros' : 'Historial de Asistencias'}
-        </h1>
-      </div>
-
-      {puedeEditar && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Columna Izquierda: Gestión de Miembros */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Directorio de Miembros</h2>
-            
-            <form onSubmit={agregarMiembro} className="space-y-3 mb-6">
-              <p className="text-xs text-gray-500">Registrar nuevo miembro:</p>
-              <input 
-                type="text" 
-                placeholder="Nombre" 
-                value={nuevoNombre}
-                onChange={(e) => setNuevoNombre(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input 
-                type="text" 
-                placeholder="Apellido" 
-                value={nuevoApellido}
-                onChange={(e) => setNuevoApellido(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button 
-                type="submit"
-                className="w-full bg-gray-800 text-white py-2 rounded-lg text-sm font-semibold hover:bg-gray-900 transition-colors"
-              >
-                + Agregar Miembro
-              </button>
-              {mensajeMiembro && <p className="text-xs text-center font-medium mt-1">{mensajeMiembro}</p>}
-            </form>
-
-            <div>
-              <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Lista Actual ({miembros.length}):</h3>
-              <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                {miembros.map((m) => (
-                  <div key={m.id} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg text-sm">
-                    <span className="text-gray-700 font-medium">{m.nombre} {m.apellido}</span>
-                    <button 
-                      onClick={() => eliminarMiembro(m.id, `${m.nombre} ${m.apellido}`)}
-                      className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-1 bg-red-50 rounded"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Encabezado Principal */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-10">
+          <button 
+            onClick={() => router.push("/dashboard")}
+            className="text-gray-500 hover:text-blue-600 font-semibold flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+              {puedeEditar ? 'Asistencia y Miembros' : 'Historial de Asistencias'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Gestiona el registro de congregantes y visualiza el historial de los cultos.
+            </p>
           </div>
+        </div>
 
-          {/* Columna Derecha: Tomar Asistencia */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha del Culto</label>
-                <input 
-                  type="date" 
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Culto</label>
-                <select 
-                  value={tipoCulto}
-                  onChange={(e) => setTipoCulto(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  <option value="domingo">Domingo (Principal)</option>
-                  <option value="martes">Martes</option>
-                  <option value="jueves">Jueves</option>
-                  <option value="sabado">Sábado</option>
-                </select>
-              </div>
-            </div>
-
-            <h2 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Lista de Miembros</h2>
+        {puedeEditar && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
             
-            <div className="space-y-2 max-h-72 overflow-y-auto mb-6 p-2 bg-gray-50 rounded-lg border">
-              {miembros.map((miembro) => (
-                <label key={miembro.id} className="flex items-center p-2.5 hover:bg-white rounded-lg cursor-pointer border border-transparent hover:border-gray-200 transition-all">
+            {/* Columna Izquierda: Gestión de Miembros */}
+            <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-gray-100 h-fit">
+              <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                  <span className="text-slate-600 text-lg">👥</span>
+                </div>
+                <h2 className="text-lg font-bold text-gray-900">Directorio</h2>
+              </div>
+              
+              {/* Formulario minimalista */}
+              <form onSubmit={agregarMiembro} className="space-y-4 mb-8">
+                <div className="grid grid-cols-2 gap-3">
                   <input 
-                    type="checkbox" 
-                    checked={asistentes.has(miembro.id)}
-                    onChange={() => toggleAsistencia(miembro.id)}
-                    className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    type="text" 
+                    placeholder="Nombre" 
+                    value={nuevoNombre}
+                    onChange={(e) => setNuevoNombre(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all placeholder-gray-400"
                   />
-                  <span className="ml-3 font-medium text-gray-700 text-sm">
-                    {miembro.nombre} {miembro.apellido}
-                  </span>
-                </label>
-              ))}
-              {miembros.length === 0 && (
-                <p className="text-gray-500 text-sm italic p-4 text-center">No hay miembros registrados aún.</p>
-              )}
+                  <input 
+                    type="text" 
+                    placeholder="Apellido" 
+                    value={nuevoApellido}
+                    onChange={(e) => setNuevoApellido(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all placeholder-gray-400"
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  className="w-full bg-slate-800 text-white py-2.5 rounded-lg text-sm font-bold hover:bg-slate-900 shadow-sm transition-all flex justify-center items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Agregar Miembro
+                </button>
+                {mensajeMiembro && (
+                  <p className={`text-xs text-center font-semibold mt-2 ${mensajeMiembro.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
+                    {mensajeMiembro}
+                  </p>
+                )}
+              </form>
+
+              <div>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                  Lista Actual ({miembros.length})
+                </h3>
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin">
+                  {miembros.map((m) => (
+                    <div key={m.id} className="flex justify-between items-center bg-gray-50 px-4 py-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
+                      <span className="text-gray-800 font-semibold text-sm">{m.nombre} {m.apellido}</span>
+                      <button 
+                        onClick={() => eliminarMiembro(m.id, `${m.nombre} ${m.apellido}`)}
+                        className="text-red-500 hover:text-red-700 text-xs font-bold px-2.5 py-1.5 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                        title="Eliminar miembro"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ))}
+                  {miembros.length === 0 && (
+                    <p className="text-center text-sm text-gray-400 py-4 italic">No hay miembros registrados.</p>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between mt-4 pt-4 border-t">
-              <p className="font-medium text-sm text-gray-600">
-                Seleccionados: <span className="text-blue-600 font-bold text-lg">{asistentes.size}</span>
-              </p>
-              <button 
-                onClick={guardarAsistencia}
-                className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-sm"
-              >
-                Guardar Asistencia
-              </button>
+            {/* Columna Central/Derecha: Tomar Asistencia */}
+            <div className="lg:col-span-2 bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+              <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+                  <span className="text-blue-600 text-lg">📝</span>
+                </div>
+                <h2 className="text-lg font-bold text-gray-900">Tomar Asistencia</h2>
+              </div>
+
+              {/* Controles: Cuadrícula de 2 columnas */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha del Culto</label>
+                  <input 
+                    type="date" 
+                    value={fecha}
+                    onChange={(e) => setFecha(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 text-sm font-medium text-gray-700 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Tipo de Culto</label>
+                  <select 
+                    value={tipoCulto}
+                    onChange={(e) => setTipoCulto(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 text-sm font-medium text-gray-700 transition-all appearance-none"
+                  >
+                    <option value="domingo">Domingo (Principal)</option>
+                    <option value="martes">Martes</option>
+                    <option value="jueves">Jueves</option>
+                    <option value="sabado">Sábado</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Lista interactiva de miembros para marcar */}
+              <div className="flex-grow mb-6 bg-slate-50 border border-gray-100 rounded-xl p-3 max-h-80 overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {miembros.map((miembro) => {
+                    const seleccionado = asistentes.has(miembro.id);
+                    return (
+                      <label 
+                        key={miembro.id} 
+                        className={`flex items-center p-3 rounded-lg cursor-pointer border-2 transition-all select-none
+                          ${seleccionado 
+                            ? 'border-blue-500 bg-blue-50 shadow-sm' 
+                            : 'border-transparent bg-transparent hover:bg-white hover:border-blue-200 hover:shadow-sm'
+                          }`}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={seleccionado}
+                          onChange={() => toggleAsistencia(miembro.id)}
+                          className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer accent-blue-600"
+                        />
+                        <span className={`ml-3 text-sm transition-colors ${seleccionado ? 'font-bold text-blue-900' : 'font-medium text-gray-700'}`}>
+                          {miembro.nombre} {miembro.apellido}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {miembros.length === 0 && (
+                  <p className="text-gray-400 text-sm italic p-6 text-center">Registra miembros en el directorio primero.</p>
+                )}
+              </div>
+
+              {/* Pie de controles de asistencia */}
+              <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-gray-100 gap-4 mt-auto">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-500">Personas seleccionadas:</span>
+                  <span className="bg-blue-100 text-blue-700 font-extrabold text-lg px-3 py-1 rounded-lg">
+                    {asistentes.size}
+                  </span>
+                </div>
+                
+                <div className="flex flex-col items-end w-full sm:w-auto">
+                  <button 
+                    onClick={guardarAsistencia}
+                    className="w-full sm:w-auto bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-md hover:bg-blue-700 hover:shadow-lg focus:ring-4 focus:ring-blue-500/50 transition-all flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Guardar Asistencia
+                  </button>
+                  {mensaje && (
+                    <p className={`mt-2 text-sm font-semibold w-full text-center sm:text-right ${mensaje.includes('✅') ? 'text-green-600' : 'text-amber-600'}`}>
+                      {mensaje}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sección Inferior: Historial de Asistencias (Tabla) */}
+        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center">
+                <span className="text-indigo-600 text-lg">🗂️</span>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">Historial Registrado</h2>
             </div>
             
-            {mensaje && (
-              <div className={`mt-4 p-3 rounded-lg text-center font-medium text-sm ${mensaje.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                {mensaje}
-              </div>
-            )}
+            <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border border-gray-200">
+              <svg className="w-5 h-5 text-gray-400 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <input 
+                type="date" 
+                value={fechaConsulta}
+                onChange={(e) => setFechaConsulta(e.target.value)}
+                className="bg-transparent border-none text-sm font-medium text-gray-700 outline-none focus:ring-0 cursor-pointer"
+              />
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Sección Inferior: Historial de Asistencias por Fecha (Visible para todos) */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 border-b pb-4">
-          <h2 className="text-lg font-bold text-gray-900">Historial de Asistencias por Fecha</h2>
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-600">Ver fecha:</label>
-            <input 
-              type="date" 
-              value={fechaConsulta}
-              onChange={(e) => setFechaConsulta(e.target.value)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b text-xs text-gray-500 uppercase">
-                <th className="py-2 px-3">Miembro Presente</th>
-                <th className="py-2 px-3">Culto</th>
-                <th className="py-2 px-3">Fecha Registrada</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y text-sm">
-              {historialFiltrado.map((h) => (
-                <tr key={h.id} className="hover:bg-gray-50">
-                  <td className="py-3 px-3 font-medium text-gray-800">
-                    {h.perfiles ? `${h.perfiles.nombre} ${h.perfiles.apellido}` : 'Desconocido'}
-                  </td>
-                  <td className="py-3 px-3">
-                    <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded uppercase">
-                      {h.tipo_culto}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-gray-500 text-xs">{h.fecha}</td>
-                </tr>
-              ))}
-              {historialFiltrado.length === 0 && (
+          <div className="overflow-x-auto rounded-lg border border-gray-100">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td colSpan={3} className="py-6 text-center text-gray-400 text-sm italic">
-                    No hay registros de asistencia para esta fecha.
-                  </td>
+                  <th className="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Miembro Presente</th>
+                  <th className="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Culto</th>
+                  <th className="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-sm">
+                {historialFiltrado.map((h) => (
+                  <tr key={h.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="py-3.5 px-4 font-semibold text-gray-800">
+                      {h.perfiles ? `${h.perfiles.nombre} ${h.perfiles.apellido}` : 'Desconocido'}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 uppercase tracking-wide border border-blue-100">
+                        {h.tipo_culto}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-gray-500 font-medium">
+                      {new Date(h.fecha + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </td>
+                  </tr>
+                ))}
+                {historialFiltrado.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="py-12 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="text-4xl mb-3">🍃</span>
+                        <p className="text-gray-400 font-medium text-sm">No hay registros de asistencia para esta fecha.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
       </div>
     </div>
   );
