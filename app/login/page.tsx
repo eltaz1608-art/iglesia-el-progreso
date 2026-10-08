@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { getCurrentAccess } from "@/lib/access";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -25,7 +26,14 @@ export default function LoginPage() {
       setError("Correo o contraseña incorrectos");
       setLoading(false);
     } else {
-      router.push("/dashboard");
+      const access = await getCurrentAccess();
+      if (!access) {
+        await supabase.auth.signOut();
+        setError("Tu cuenta no tiene acceso activo. Contacta al administrador.");
+        setLoading(false);
+        return;
+      }
+      router.replace("/dashboard");
     }
   };
 

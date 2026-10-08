@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAccess } from "@/lib/access-context";
 import { useRouter } from "next/navigation";
 
 type Visita = {
@@ -26,7 +27,7 @@ export default function VisitasPage() {
   const [cargando, setCargando] = useState(true);
 
   // Nivel de acceso
-  const [userRol, setUserRol] = useState<string>("general");
+  const userRol = useAccess().role;
 
   // Formulario de nueva visita
   const [nombre, setNombre] = useState("");
@@ -43,30 +44,14 @@ export default function VisitasPage() {
     setFechaVisita(hoy);
     if (!fechaFiltro) setFechaFiltro(hoy);
 
-    // 1. Verificar Rol
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const { data: perfil } = await supabase
-        .from("perfiles")
-        .select("rol")
-        .eq("id", session.user.id)
-        .single();
-      
-      if (perfil) {
-        setUserRol(perfil.rol);
-      } else if (session.user.email === "admin@gmail.com") {
-        setUserRol("pastor");
-      }
-    }
-
-    // 2. Obtener miembros para el selector de "quién lo invitó"
+    // Obtener miembros para el selector de "quién lo invitó"
     const { data: resMiembros } = await supabase
       .from("perfiles")
       .select("id, nombre, apellido")
       .order("nombre");
     if (resMiembros) setMiembros(resMiembros);
 
-    // 3. Obtener lista de visitas registradas
+    // Obtener lista de visitas registradas
     const { data: resVisitas } = await supabase
       .from("visitas")
       .select(`
