@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAccess } from "@/lib/access-context";
 import { useRouter } from "next/navigation";
 
 type Peticion = {
@@ -23,6 +24,8 @@ type Miembro = {
 
 export default function OracionesPage() {
   const router = useRouter();
+  const access = useAccess();
+  const puedeGestionar = access.role === "pastor";
   const [peticiones, setPeticiones] = useState<Peticion[]>([]);
   const [miembros, setMiembros] = useState<Miembro[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -62,7 +65,8 @@ export default function OracionesPage() {
 
   const registrarPeticion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!motivo || !perfilId) {
+    const autorId = puedeGestionar ? perfilId : access.memberId;
+    if (!motivo || !autorId) {
       setMensaje("⚠️ Selecciona quién pide y escribe el motivo.");
       return;
     }
@@ -70,7 +74,7 @@ export default function OracionesPage() {
     setMensaje("Enviando petición...");
 
     const { error } = await supabase.from("peticiones_oracion").insert({
-      perfil_id: perfilId,
+      perfil_id: autorId,
       motivo,
       estado: "activa",
     });
@@ -89,6 +93,7 @@ export default function OracionesPage() {
 
   // Cambiar estado (activa / contestada)
   const toggleEstado = async (id: string, estadoActual: string) => {
+    if (!puedeGestionar) return;
     const nuevoEstado = estadoActual === "activa" ? "contestada" : "activa";
     const { error } = await supabase
       .from("peticiones_oracion")
@@ -147,12 +152,16 @@ export default function OracionesPage() {
               <h2 className="text-lg font-bold text-gray-900">Nueva Petición</h2>
             </div>
             
+            {!puedeGestionar && !access.memberId && (
+              <p className="mb-4 text-sm text-amber-700">Tu cuenta debe estar vinculada a un miembro para enviar una petición.</p>
+            )}
             <form onSubmit={registrarPeticion} className="space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Hermano / Miembro</label>
                 <select 
-                  value={perfilId}
+                  value={puedeGestionar ? perfilId : access.memberId ?? ""}
                   onChange={(e) => setPerfilId(e.target.value)}
+                  disabled={!puedeGestionar}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:bg-white focus:ring-2 focus:ring-orange-500 transition-all text-sm font-medium text-gray-700"
                   required
                 >
@@ -177,6 +186,7 @@ export default function OracionesPage() {
 
               <button 
                 type="submit"
+                disabled={!puedeGestionar && !access.memberId}
                 className="w-full bg-orange-600 text-white py-3 rounded-lg font-bold shadow-md hover:bg-orange-700 hover:shadow-lg focus:ring-4 focus:ring-orange-500/50 transition-all text-sm flex justify-center items-center gap-2 mt-2"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -222,6 +232,7 @@ export default function OracionesPage() {
                   <div className="mt-2 sm:mt-0">
                     <button
                       onClick={() => toggleEstado(p.id, p.estado)}
+                      disabled={!puedeGestionar}
                       className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm transition-all ${
                         p.estado === 'contestada' 
                           ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:shadow' 

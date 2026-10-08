@@ -1,65 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAccess } from "@/lib/access-context";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState<string | undefined>("");
-  const [userRol, setUserRol] = useState<string>("general");
-  const [userName, setUserName] = useState<string>("");
+  const access = useAccess();
+  const userEmail = access.email;
+  const userRol = access.role;
+  const userName = access.name;
   
   // Estado para controlar el menú hamburguesa en celulares
   const [menuAbierto, setMenuAbierto] = useState(false);
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push("/login");
-      } else {
-        const email = session.user.email;
-        setUserEmail(email);
-        
-        const { data: perfil } = await supabase
-          .from("perfiles")
-          .select("nombre, apellido, rol")
-          .eq("id", session.user.id)
-          .single();
-
-        if (perfil) {
-          setUserRol((perfil.rol || "general").trim().toLowerCase());
-          setUserName(`${perfil.nombre || ""} ${perfil.apellido || ""}`.trim());
-        } 
-        
-        if (email === "admin@gmail.com") {
-          setUserRol("pastor");
-          if (!userName) setUserName("Admin Progreso");
-        }
-
-        setLoading(false);
-      }
-    };
-    checkUser();
-  }, [router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-          <p className="text-gray-500 font-medium animate-pulse">Cargando panel...</p>
-        </div>
-      </div>
-    );
-  }
 
   const esPastor = userRol === 'pastor';
 
@@ -174,7 +133,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           
           {/* Tarjeta: Asistencias */}
-          {(['pastor', 'lider_asistencia', 'colaborador', 'general'].includes(userRol)) && (
+          {(['pastor', 'lider_asistencia'].includes(userRol)) && (
             <div 
               onClick={() => router.push('/dashboard/asistencias')}
               className="group relative overflow-hidden bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all active:scale-95 cursor-pointer"
@@ -187,13 +146,13 @@ export default function DashboardPage() {
               </div>
               <h3 className="relative z-10 font-bold text-gray-900 text-lg mb-1">Asistencias</h3>
               <p className="relative z-10 text-sm text-gray-500 leading-relaxed">
-                {userRol === 'general' ? 'Visualiza el registro de asistencias.' : 'Registra y revisa quién vino a los cultos.'}
+                Registra y revisa quién vino a los cultos.
               </p>
             </div>
           )}
 
           {/* Tarjeta: Visitas */}
-          {(['pastor', 'lider_asistencia', 'colaborador', 'general'].includes(userRol)) && (
+          {(['pastor', 'lider_asistencia'].includes(userRol)) && (
             <div 
               onClick={() => router.push('/dashboard/visitas')}
               className="group relative overflow-hidden bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-green-100 transition-all active:scale-95 cursor-pointer"
@@ -206,13 +165,13 @@ export default function DashboardPage() {
               </div>
               <h3 className="relative z-10 font-bold text-gray-900 text-lg mb-1">Visitas</h3>
               <p className="relative z-10 text-sm text-gray-500 leading-relaxed">
-                {userRol === 'general' ? 'Visualiza el registro de visitas.' : 'Seguimiento de nuevos invitados a la iglesia.'}
+                Seguimiento de nuevos invitados a la iglesia.
               </p>
             </div>
           )}
 
           {/* Tarjeta: Cronograma */}
-          {(['pastor', 'lider_cronograma', 'colaborador', 'general'].includes(userRol)) && (
+          {(['pastor', 'lider_cronograma', 'lider_asistencia', 'colaborador', 'general'].includes(userRol)) && (
             <div 
               onClick={() => router.push('/dashboard/cronograma')}
               className="group relative overflow-hidden bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-purple-100 transition-all active:scale-95 cursor-pointer"

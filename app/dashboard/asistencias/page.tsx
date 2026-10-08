@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAccess } from "@/lib/access-context";
 import { useRouter } from "next/navigation";
 
 type Perfil = {
@@ -28,7 +29,7 @@ export default function AsistenciasPage() {
   const [cargando, setCargando] = useState(true);
   
   // Nivel de acceso
-  const [userRol, setUserRol] = useState<string>("general");
+  const userRol = useAccess().role;
   
   // Datos del formulario de asistencia
   const [fecha, setFecha] = useState("");
@@ -49,23 +50,7 @@ export default function AsistenciasPage() {
     if (!fecha) setFecha(hoy);
     if (!fechaConsulta) setFechaConsulta(hoy);
 
-    // 1. Verificar Rol
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const { data: perfil } = await supabase
-        .from("perfiles")
-        .select("rol")
-        .eq("id", session.user.id)
-        .single();
-      
-      if (perfil) {
-        setUserRol(perfil.rol);
-      } else if (session.user.email === "admin@gmail.com") {
-        setUserRol("pastor");
-      }
-    }
-
-    // 2. Obtener miembros
+    // Obtener miembros
     const { data: dataMiembros } = await supabase
       .from("perfiles")
       .select("id, nombre, apellido")
@@ -73,7 +58,7 @@ export default function AsistenciasPage() {
 
     if (dataMiembros) setMiembros(dataMiembros);
 
-    // 3. Obtener historial de asistencias
+    // Obtener historial de asistencias
     const { data: dataHistorial } = await supabase
       .from("asistencias")
       .select(`
@@ -115,17 +100,6 @@ export default function AsistenciasPage() {
       setNuevoApellido("");
       obtenerDatos();
       setTimeout(() => setMensajeMiembro(""), 3000);
-    }
-  };
-
-  const eliminarMiembro = async (id: string, nombreCompleto: string) => {
-    if (confirm(`¿Estás seguro de dar de baja a ${nombreCompleto}?`)) {
-      const { error } = await supabase.from("perfiles").delete().eq("id", id);
-      if (error) {
-        alert("No se pudo eliminar (tiene registros relacionados).");
-      } else {
-        obtenerDatos();
-      }
     }
   };
 
@@ -257,15 +231,8 @@ export default function AsistenciasPage() {
                 </h3>
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin">
                   {miembros.map((m) => (
-                    <div key={m.id} className="flex justify-between items-center bg-gray-50 px-4 py-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
+                    <div key={m.id} className="flex items-center bg-gray-50 px-4 py-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
                       <span className="text-gray-800 font-semibold text-sm">{m.nombre} {m.apellido}</span>
-                      <button 
-                        onClick={() => eliminarMiembro(m.id, `${m.nombre} ${m.apellido}`)}
-                        className="text-red-500 hover:text-red-700 text-xs font-bold px-2.5 py-1.5 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
-                        title="Eliminar miembro"
-                      >
-                        Eliminar
-                      </button>
                     </div>
                   ))}
                   {miembros.length === 0 && (

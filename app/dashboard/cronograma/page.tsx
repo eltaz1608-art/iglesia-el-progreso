@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAccess } from "@/lib/access-context";
 import { useRouter } from "next/navigation";
 
 type Turno = {
@@ -26,7 +27,7 @@ export default function CronogramaPage() {
   const [cargando, setCargando] = useState(true);
 
   // Nivel de acceso
-  const [userRol, setUserRol] = useState<string>("general");
+  const userRol = useAccess().role;
 
   // Formulario
   const [fecha, setFecha] = useState("");
@@ -40,30 +41,14 @@ export default function CronogramaPage() {
     const hoy = new Date().toISOString().split("T")[0];
     if (!fecha) setFecha(hoy);
 
-    // 1. Verificar Rol
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const { data: perfil } = await supabase
-        .from("perfiles")
-        .select("rol")
-        .eq("id", session.user.id)
-        .single();
-      
-      if (perfil) {
-        setUserRol(perfil.rol);
-      } else if (session.user.email === "admin@gmail.com") {
-        setUserRol("pastor");
-      }
-    }
-
-    // 2. Cargar miembros para los selectores
+    // Cargar miembros para los selectores
     const { data: resMiembros } = await supabase
       .from("perfiles")
       .select("id, nombre, apellido")
       .order("nombre");
     if (resMiembros) setMiembros(resMiembros);
 
-    // 3. Cargar cronograma con nombres de los perfiles relacionados
+    // Cargar cronograma con nombres de los perfiles relacionados
     const { data: resTurnos } = await supabase
       .from("cronograma_servicio")
       .select(`
