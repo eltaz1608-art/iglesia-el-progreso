@@ -23,20 +23,19 @@ revoke all on table public.accesos from public, anon, authenticated;
 grant select on table public.accesos to authenticated;
 grant update (rol, activo, miembro_id) on table public.accesos to authenticated;
 
--- One-time transfer of the old role column. The existing admin@gmail.com
--- account has no member row; preserve its legacy access only during migration.
+-- One-time transfer of roles for accounts already linked to a member.
+-- Unlinked accounts remain inactive until a pastor reviews them.
 insert into public.accesos (usuario_id, miembro_id, rol, activo)
 select
   u.id,
   p.id,
   case
-    when p.id is null and u.email = 'admin@gmail.com' then 'pastor'
     when lower(trim(p.rol)) in (
       'pastor', 'lider_asistencia', 'lider_cronograma', 'colaborador', 'general'
     ) then lower(trim(p.rol))
     else 'general'
   end,
-  p.id is not null or u.email = 'admin@gmail.com'
+  p.id is not null
 from auth.users u
 left join public.perfiles p on p.id = u.id
 on conflict (usuario_id) do nothing;
